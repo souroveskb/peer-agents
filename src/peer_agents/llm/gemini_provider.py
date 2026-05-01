@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import os
-from typing import Any
+from typing import Any, Final, override
 
 from .base import LLMProvider, LLMResponse, Message, ToolDefinition
 
-DEFAULT_MODEL = "gemini-2.0-flash"
-DEFAULT_MAX_TOKENS = 8_192
+DEFAULT_MODEL: Final[str] = "gemini-2.0-flash"
+DEFAULT_MAX_TOKENS: Final[int] = 8_192
 
 
 class GeminiProvider(LLMProvider):
@@ -17,6 +17,10 @@ class GeminiProvider(LLMProvider):
         model: Gemini model ID. Defaults to gemini-2.0-flash.
         max_tokens: Default output token budget per call.
     """
+
+    _genai: Any  # google.generativeai module — loaded lazily at construction time
+    model_name: str
+    max_tokens: int
 
     def __init__(
         self,
@@ -36,6 +40,7 @@ class GeminiProvider(LLMProvider):
         self.model_name = model
         self.max_tokens = max_tokens
 
+    @override
     async def complete(
         self,
         messages: list[Message],
@@ -50,22 +55,21 @@ class GeminiProvider(LLMProvider):
 
         # Gemini uses role "model" instead of "assistant" and requires
         # alternating user/model turns. Build history from all but the last.
-        history = []
+        history: list[dict[str, Any]] = []
         for m in messages[:-1]:
-            role = "user" if m.role == "user" else "model"
-            content = m.content if isinstance(m.content, str) else str(m.content)
+            role: str = "user" if m.role == "user" else "model"
+            content: str = m.content if isinstance(m.content, str) else str(m.content)
             history.append({"role": role, "parts": [content]})
 
         chat = model.start_chat(history=history)
         last = messages[-1].content
-        if not isinstance(last, str):
-            last = str(last)
+        last_str: str = last if isinstance(last, str) else str(last)
 
         response = await chat.send_message_async(
-            last,
+            last_str,
             generation_config=self._genai.types.GenerationConfig(
                 max_output_tokens=kwargs.get("max_tokens", self.max_tokens),
             ),
         )
 
-        return LLMResponse(content=response.text, stop_reason="end_turn")
+        return LLMResponse(content=response.text or "", stop_reason="end_turn")

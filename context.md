@@ -7,11 +7,7 @@
 ## Install
 
 ```bash
-pip install "peer-agents[anthropic] @ git+https://github.com/your-username/peer-agents.git"
-pip install "peer-agents[openai] @ git+https://github.com/your-username/peer-agents.git"
-pip install "peer-agents[google] @ git+https://github.com/your-username/peer-agents.git"
-pip install "peer-agents[files] @ git+https://github.com/your-username/peer-agents.git"  # PDF/DOCX/PPTX context
-pip install "peer-agents[all] @ git+https://github.com/your-username/peer-agents.git"
+pip install "peer-agents @ git+https://github.com/your-username/peer-agents.git"
 ```
 
 ## Import paths
@@ -48,7 +44,7 @@ Model name routing:
 | Prefix | Provider class | Env var | Default model |
 |---|---|---|---|
 | `claude-*` | `AnthropicProvider` | `ANTHROPIC_API_KEY` | `claude-opus-4-7` |
-| `gpt-*` / `o1*` / `o3*` / `o4*` / `chatgpt-*` | `OpenAIProvider` | `OPENAI_API_KEY` | `gpt-4o` |
+| `gpt-*` / `o1*` / `o3*` / `o4*` | `OpenAIProvider` | `OPENAI_API_KEY` | `gpt-4o` |
 | `gemini-*` | `GeminiProvider` | `GOOGLE_API_KEY` | `gemini-2.0-flash` |
 
 Provider constructors:
@@ -170,7 +166,7 @@ result.has_criticism  -> bool
 
 ## context_files
 
-Both `Author` and `Critic` accept `context_files`. Text is extracted at construction time and appended to the system prompt. Supported formats: `.pdf`, `.docx`, `.pptx`, `.txt`, `.md`. Requires `pip install "peer-agents[files]"`.
+Both `Author` and `Critic` accept `context_files`. Text is extracted at construction time and appended to the system prompt. Supported formats: `.pdf`, `.docx`, `.pptx`, `.txt`, `.md`.
 
 ```python
 from pathlib import Path

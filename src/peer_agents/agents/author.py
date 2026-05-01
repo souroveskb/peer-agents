@@ -48,7 +48,7 @@ class Author(GenerationAgent):
         The revision request is appended to the existing conversation history,
         so the LLM sees the original content alongside the new instructions.
         """
-        revision_num = len(self.outputs)
+        revision_num: int = len(self.outputs)
         return await self.generate(
             f"Please revise your content based on this feedback:\n\n{criticism}",
             history_label=f"Revised draft #{revision_num}:",

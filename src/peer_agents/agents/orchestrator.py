@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel, ConfigDict, computed_field
 
 from peer_agents.llm.base import LLMProvider, Message
 
@@ -15,6 +15,8 @@ from .critic import Critic
 class CriticResult(BaseModel):
     """Output from a single critic in one iteration."""
 
+    model_config = ConfigDict(frozen=True)
+
     name: str
     output: str
     has_criticism: bool
@@ -22,6 +24,8 @@ class CriticResult(BaseModel):
 
 class IterationRecord(BaseModel):
     """Record of a single author-critic cycle."""
+
+    model_config = ConfigDict(frozen=True)
 
     iteration: int
     author_output: str
@@ -39,9 +43,7 @@ class IterationRecord(BaseModel):
         """Combined critic feedback. Single-critic: raw output. Multi-critic: labeled sections."""
         if len(self.critic_results) == 1:
             return self.critic_results[0].output
-        return "\n\n".join(
-            f"[{r.name}]\n{r.output}" for r in self.critic_results
-        )
+        return "\n\n".join(f"[{r.name}]\n{r.output}" for r in self.critic_results)
 
 
 class Orchestrator:
@@ -69,6 +71,15 @@ class Orchestrator:
         name: Display name for this orchestrator.
     """
 
+    llm: LLMProvider
+    author: Author
+    critics: list[Critic]
+    max_iterations: int
+    name: str
+    _system_prompt: str
+    memory: list[IterationRecord]
+    converged: bool
+
     def __init__(
         self,
         llm: LLMProvider | str,
@@ -80,12 +91,12 @@ class Orchestrator:
     ) -> None:
         self.llm = _resolve_llm(llm)
         self.author = author
-        self.critics: list[Critic] = [critic] if isinstance(critic, Critic) else list(critic)
+        self.critics = [critic] if isinstance(critic, Critic) else list(critic)
         self.max_iterations = max_iterations
         self.name = name
         self._system_prompt = _resolve_prompt(system_prompt, "orchestrator.txt")
-        self.memory: list[IterationRecord] = []
-        self.converged: bool = False
+        self.memory = []
+        self.converged = False
 
     async def run(self, topic: str) -> str:
         """Run the author-critic loop and return the final author output.
@@ -99,7 +110,7 @@ class Orchestrator:
         for critic in self.critics:
             critic.reset()
 
-        author_output = await self.author.write(topic)
+        author_output: str = await self.author.write(topic)
 
         for i in range(1, self.max_iterations + 1):
             # All critics review in parallel.
@@ -123,20 +134,19 @@ class Orchestrator:
 
             if i < self.max_iterations:
                 # Only pass feedback from critics who actually found issues.
-                actionable = [r for r in critic_results if r.has_criticism]
-                if len(actionable) == 1:
-                    combined = actionable[0].output
-                else:
-                    combined = "\n\n".join(
-                        f"[{r.name}]\n{r.output}" for r in actionable
-                    )
+                actionable: list[CriticResult] = [r for r in critic_results if r.has_criticism]
+                combined: str = (
+                    actionable[0].output
+                    if len(actionable) == 1
+                    else "\n\n".join(f"[{r.name}]\n{r.output}" for r in actionable)
+                )
                 author_output = await self.author.revise(combined)
 
         return author_output
 
     async def _review_and_check(self, critic: Critic, author_output: str) -> CriticResult:
-        output = await critic.review(author_output)
-        has_issues = await self._has_criticism(output)
+        output: str = await critic.review(author_output)
+        has_issues: bool = await self._has_criticism(output)
         return CriticResult(name=critic.name, output=output, has_criticism=has_issues)
 
     async def _has_criticism(self, critic_output: str) -> bool:

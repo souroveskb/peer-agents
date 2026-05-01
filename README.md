@@ -9,9 +9,7 @@
 peer-agents — author-critic refinement pipeline for Python (async, provider-agnostic)
 
 INSTALL
-  pip install "peer-agents[anthropic] @ git+https://github.com/your-username/peer-agents.git"
-  pip install "peer-agents[openai] @ ..."   pip install "peer-agents[google] @ ..."
-  pip install "peer-agents[files] @ ..."    pip install "peer-agents[all] @ ..."
+  pip install "peer-agents @ git+https://github.com/your-username/peer-agents.git"
 
 IMPORTS
   from peer_agents import Author, Critic, Orchestrator, IterationRecord, CriticResult
@@ -96,41 +94,28 @@ FULL API CONTEXT: see context.md in the repository root
 
 ## Installation
 
-Install directly from GitHub. Pick the LLM backend(s) you need — only the core package (`pydantic`, `httpx`) is required; everything else is optional.
+Install directly from GitHub. All LLM backends (Anthropic, OpenAI, Gemini) and file-context support (PDF / DOCX / PPTX) are included by default.
 
 **With `pip`**
 
 ```bash
-# Core + Anthropic Claude
-pip install "peer-agents[anthropic] @ git+https://github.com/your-username/peer-agents.git"
-
-# Core + OpenAI
-pip install "peer-agents[openai] @ git+https://github.com/your-username/peer-agents.git"
-
-# Core + Google Gemini
-pip install "peer-agents[google] @ git+https://github.com/your-username/peer-agents.git"
-
-# File context support (PDF / DOCX / PPTX)
-pip install "peer-agents[files] @ git+https://github.com/your-username/peer-agents.git"
-
-# Everything
-pip install "peer-agents[all] @ git+https://github.com/your-username/peer-agents.git"
+pip install "peer-agents @ git+https://github.com/your-username/peer-agents.git"
 ```
 
 **With `uv`**
 
 ```bash
-uv add "peer-agents[anthropic] @ git+https://github.com/your-username/peer-agents.git"
+uv add "peer-agents @ git+https://github.com/your-username/peer-agents.git"
 ```
 
 **Pin to a specific version** (recommended for reproducible installs)
 
 ```bash
 # by tag
-pip install "peer-agents[anthropic] @ git+https://github.com/your-username/peer-agents.git@v0.1.0"
+pip install "peer-agents @ git+https://github.com/your-username/peer-agents.git@v0.1.0"
 
 # by commit
-pip install "peer-agents[anthropic] @ git+https://github.com/your-username/peer-agents.git@abc1234"
+pip install "peer-agents @ git+https://github.com/your-username/peer-agents.git@abc1234"
 ```
 
 **From source** (local development)
@@ -138,7 +123,7 @@ pip install "peer-agents[anthropic] @ git+https://github.com/your-username/peer-
 ```bash
 git clone https://github.com/your-username/peer-agents
 cd peer-agents
-uv sync --all-extras
+uv sync
 ```
 
 ---
@@ -229,7 +214,7 @@ Model name routing:
 | Prefix | Provider | Env var | Default model |
 |---|---|---|---|
 | `claude-*` | `AnthropicProvider` | `ANTHROPIC_API_KEY` | `claude-opus-4-7` |
-| `gpt-*`, `o1*`, `o3*`, `o4*`, `chatgpt-*` | `OpenAIProvider` | `OPENAI_API_KEY` | `gpt-4o` |
+| `gpt-*`, `o1*`, `o3*`, `o4*` | `OpenAIProvider` | `OPENAI_API_KEY` | `gpt-4o` |
 | `gemini-*` | `GeminiProvider` | `GOOGLE_API_KEY` | `gemini-2.0-flash` |
 
 **Anthropic-specific features** — streaming, prompt caching, and adaptive thinking are enabled automatically in `AnthropicProvider`. These are Anthropic-only; other providers ignore them.
@@ -364,12 +349,6 @@ for record in orchestrator.memory:
 
 Both `Author` and `Critic` accept a `context_files` argument — a list of paths to PDF, DOCX, PPTX, TXT, or MD files. Text is extracted at construction time and appended to the system prompt, so the LLM has the document content available on every call.
 
-Requires the `[files]` extra:
-
-```bash
-pip install "peer-agents[files]"
-```
-
 ```python
 from pathlib import Path
 from peer_agents import Author, Critic
@@ -406,7 +385,7 @@ Supported formats:
 | `.pptx` | `python-pptx` |
 | `.txt` / `.md` | nothing (stdlib) |
 
-All three libraries are bundled in `pip install "peer-agents[files]"`.
+All three libraries are included in the default install.
 
 ---
 

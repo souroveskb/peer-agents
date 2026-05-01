@@ -7,6 +7,12 @@ requires-python = ">=3.12"
 dependencies = [
     "httpx>=0.28.1",
     "pydantic>=2.13.3",
+    "anthropic>=0.40",
+    "openai>=1.0",
+    "google-generativeai",
+    "pypdf>=4.0",
+    "python-docx>=1.0",
+    "python-pptx>=1.0",
 ]
 
 [project.scripts]
@@ -27,6 +33,11 @@ dev = [
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+ignore_missing_imports = true
 
 [project.optional-dependencies]
 openai = ["openai>=1.0"]

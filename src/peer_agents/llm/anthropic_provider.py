@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Final, override
 
 import anthropic
 
 from .base import LLMProvider, LLMResponse, Message, ToolCall, ToolDefinition
 
-DEFAULT_MODEL = "claude-opus-4-7"
-DEFAULT_MAX_TOKENS = 16_000
+DEFAULT_MODEL: Final[str] = "claude-opus-4-7"
+DEFAULT_MAX_TOKENS: Final[int] = 16_000
 
 
 class AnthropicProvider(LLMProvider):
@@ -22,6 +22,10 @@ class AnthropicProvider(LLMProvider):
         max_tokens: Default output token budget per call.
     """
 
+    client: anthropic.AsyncAnthropic
+    model: str
+    max_tokens: int
+
     def __init__(
         self,
         api_key: str | None = None,
@@ -32,6 +36,7 @@ class AnthropicProvider(LLMProvider):
         self.model = model
         self.max_tokens = max_tokens
 
+    @override
     async def complete(
         self,
         messages: list[Message],
@@ -39,7 +44,9 @@ class AnthropicProvider(LLMProvider):
         tools: list[ToolDefinition] | None = None,
         **kwargs: Any,
     ) -> LLMResponse:
-        api_messages = [{"role": m.role, "content": m.content} for m in messages]
+        api_messages: list[dict[str, Any]] = [
+            {"role": m.role, "content": m.content} for m in messages
+        ]
 
         params: dict[str, Any] = {
             "model": self.model,
@@ -65,7 +72,7 @@ class AnthropicProvider(LLMProvider):
         async with self.client.messages.stream(**params) as stream:
             response = await stream.get_final_message()
 
-        text_content = ""
+        text_content: str = ""
         tool_calls: list[ToolCall] = []
         raw_content: list[dict[str, Any]] = []
 

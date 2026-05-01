@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Any
+from typing import Any, Final, override
 
 from .base import LLMProvider, LLMResponse, Message, ToolCall, ToolDefinition
 
-DEFAULT_MODEL = "gpt-4o"
-DEFAULT_MAX_TOKENS = 4_096
+DEFAULT_MODEL: Final[str] = "gpt-4o"
+DEFAULT_MAX_TOKENS: Final[int] = 4_096
 
 
 class OpenAIProvider(LLMProvider):
@@ -18,6 +18,10 @@ class OpenAIProvider(LLMProvider):
         model: Model ID. Defaults to gpt-4o.
         max_tokens: Default output token budget per call.
     """
+
+    client: Any  # openai.AsyncOpenAI — loaded lazily at construction time
+    model: str
+    max_tokens: int
 
     def __init__(
         self,
@@ -36,6 +40,7 @@ class OpenAIProvider(LLMProvider):
         self.model = model
         self.max_tokens = max_tokens
 
+    @override
     async def complete(
         self,
         messages: list[Message],
@@ -47,7 +52,7 @@ class OpenAIProvider(LLMProvider):
         if system:
             api_messages.append({"role": "system", "content": system})
         for m in messages:
-            content = m.content if isinstance(m.content, str) else json.dumps(m.content)
+            content: str = m.content if isinstance(m.content, str) else json.dumps(m.content)
             api_messages.append({"role": m.role, "content": content})
 
         params: dict[str, Any] = {
@@ -80,13 +85,19 @@ class OpenAIProvider(LLMProvider):
                     ToolCall(id=tc.id, name=tc.function.name, input=json.loads(tc.function.arguments))
                 )
 
-        stop = "end_turn" if choice.finish_reason in ("stop", None) else choice.finish_reason
+        finish_reason = choice.finish_reason
+        stop: str = "end_turn" if finish_reason in ("stop", None) else (finish_reason or "end_turn")
+
+        usage: dict[str, int] = {}
+        if response.usage is not None:
+            usage = {
+                "input_tokens": response.usage.prompt_tokens,
+                "output_tokens": response.usage.completion_tokens,
+            }
+
         return LLMResponse(
             content=msg.content or "",
             tool_calls=tool_calls,
             stop_reason=stop,
-            usage={
-                "input_tokens": response.usage.prompt_tokens,
-                "output_tokens": response.usage.completion_tokens,
-            },
+            usage=usage,
         )

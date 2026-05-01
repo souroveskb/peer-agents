@@ -40,7 +40,7 @@ class Critic(GenerationAgent):
 
     async def review(self, content: str) -> str:
         """Review the provided content and return feedback."""
-        criticism_num = len(self.outputs) + 1
+        criticism_num: int = len(self.outputs) + 1
         return await self.generate(
             f"Please review the following content:\n\n{content}",
             history_label=f"Criticism #{criticism_num}:",
